@@ -220,7 +220,6 @@ def get_grid_mapping(idx_lon, idx_lat, grid_map):
 
 def cpdn_regrid_field(src_data, tgt_data, grid_map, mv=numpy.inf):
 	# regrid a field (X by Y) of data using the computed weights
-	print mv
 	for x in range(0, tgt_data.shape[1]):
 		for y in range(0, tgt_data.shape[0]):
 			# get the indices and weights for this index

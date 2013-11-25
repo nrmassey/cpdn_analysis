@@ -1,9 +1,9 @@
 import math
 
 ########################################################################################
-### Convert global coords to rotated coords
+### Convert global coords to rotated (regional) coords
 
-def reg2rot(lon, lat, pole_lon, pole_lat):
+def glob2rot(lon, lat, pole_lon, pole_lat):
 
 	# Make sure rotlon is between 0 and 360
 	while (lon  >= 360.0):
@@ -67,7 +67,7 @@ def reg2rot(lon, lat, pole_lon, pole_lat):
 ########################################################################################
 ### Convert rotated (regional) to global grid
 
-def rot2reg(lon, lat, pole_lon, pole_lat):
+def rot2glob(lon, lat, pole_lon, pole_lat):
 	# Make sure rotlon is between 0 and 360
 	while (lon >= 360.0):
 		lon -= 360.0
@@ -127,13 +127,16 @@ def rot2reg(lon, lat, pole_lon, pole_lat):
 
 ########################################################################################
 
+rot2reg = rot2glob
+reg2rot = glob2rot
+
 if __name__ == "__main__":
 	pole_lat = 39.25
 	pole_lon = 198
 	lon = 6.8
 	lat = 38.5
-	lon_r, lat_r = reg2rot(lon, lat, pole_lon, pole_lat)
-	lon_g, lat_g = rot2reg(lon_r, lat_r, pole_lon, pole_lat)
+	lon_r, lat_r = glob2rot(lon, lat, pole_lon, pole_lat)
+	lon_g, lat_g = rot2glob(lon_r, lat_r, pole_lon, pole_lat)
 	print lon, lat
 	print lon_r, lat_r
 	print lon_g, lat_g

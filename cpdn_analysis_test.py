@@ -22,7 +22,7 @@ import matplotlib.cm as cm
 ### tests ###
 
 if __name__ == "__main__":
-    test_number = 14
+    test_number = 16
 
     if test_number == 0:
         path = EU("/Volumes/Macintosh HD2/shared/sas_test2/")
@@ -254,3 +254,13 @@ if __name__ == "__main__":
 #        mp.draw_colorbar("Temperature in $^\circ$K")
 #        mp.draw_continents()
 #        mp.save("block_plot_test.png")
+
+    elif test_number == 16:
+        path = EU("/Users/massey/Downloads/")
+        file = "precip.mon.ltm.nc"
+        box = cpdn_box()
+        box.load(path+file, "precip")
+        N96_X = numpy.arange(0, 360, 1.875)
+        N96_Y = numpy.arange(90, -91.25, -1.25)
+        tgt_box = cpdn_regrid(box, N96_X, N96_Y)
+        tgt_box.save("precip_rgd.nc")
