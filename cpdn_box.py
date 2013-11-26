@@ -1327,6 +1327,11 @@ class cpdn_box:
 
 	###########################################################################
 
+	def set_attributes(self, attrs):
+		self.__var_attrs = attrs
+
+	###########################################################################
+
 	def get_global_attributes(self):
 		"""Return the variable attributes for the box."""
 		# check the box is not empty
@@ -1340,6 +1345,12 @@ class cpdn_box:
 	def get_name(self):
 		"""Return the name of the variable / field associated with the box"""
 		return self.__name
+
+	###########################################################################
+
+	def set_name(self, name):
+		"""Set the name of the variable"""
+		self.__name = name
 
 	###########################################################################
 
