@@ -8,7 +8,9 @@
 ###############################################################################
 
 from cpdn_box import *
+from cpdn_helpers import *
 import numpy
+import numpy.ma as ma
 import math
 from datetime import datetime
 from daytime import days_elapsed
@@ -338,6 +340,73 @@ def cpdn_temporal_sum(box):
 					   name=box.get_name(), off=tgt_off, sf=tgt_sf, data=tgt_data)
 	return tgt_box
 
+###############################################################################
+
+def cpdn_monthly_mean(box):
+	"""Create a monthly mean from a cpdn_box, 
+	   e.g. mean of Jan 1969, mean of Feb 1969, ..., mean of Dec 1969
+	        mean of Jan 1970, mean of Feb 1970, ..., etc."""
+	T_axis = box.get_dimension_axes().index("T")
+	T_dim = box.get_dimension("T")
+	T_vals = T_dim.get_values("daytime")
+	M_sd = T_vals[0].month
+	Y_sd = T_vals[0].year
+	sd, tu, nd = T_dim.get_time_details()
+	# get missing value
+	mv = box.get_missing_value()
+	# loop over the data
+	c_pos = 0
+	# create the array
+	tgt_shape = []
+	new_t_len = int(T_dim.get_len() / nd) * 12
+	for d in box.get_dimensions():
+		if d.get_axis() != "T":
+			tgt_shape.append(d.get_len())
+		else:
+			tgt_shape.append(new_t_len)
+	tgt_data = numpy.ones(tgt_shape, 'f') * -mv
+	
+	# do the loop
+	t_pos = 0
+	while c_pos < len(T_vals) and t_pos < new_t_len:
+		s_pos = c_pos
+		# find the start and end of the month
+		while c_pos < len(T_vals) and T_vals[c_pos].month == T_vals[s_pos].month:
+			c_pos += 1
+		# do the mean
+		data = ma.masked_equal(box[s_pos:c_pos-1].get_values(), mv)
+		tgt_data[t_pos] = data.mean(axis=T_axis).filled(mv)
+		t_pos += 1
+	
+	# create the target time values and the bounds
+	vals = []
+	bnds = []
+	c_yr = Y_sd
+	c_mn = M_sd
+	for m in range(0, tgt_shape[T_axis]):
+		if nd == 360:
+			DV = m*30*un+15 + T_sd
+			vals.append(DV)
+			bnds.append([DV-15, DV+15])
+		else:
+			if (c_mn == 13):
+				c_yr += 1
+				c_mn = 1
+			DM = int(0.5 + float(days_elapsed[c_mn] - days_elapsed[c_mn-1])/2)
+			cd = daytime(c_yr, c_mn, DM)
+			DV = daytime_to_float(cd) - sd
+			if c_yr % 4 == 0 and c_mn >= 3:
+				DV += 1
+			vals.append(DV)
+			bnds.append([DV-DM, DV+DM])
+			c_mn += 1
+
+	method_str = "time: monthly mean"
+	history_str = datetime.now().isoformat() + " altered by CPDN: monthly mean."
+	tgt_box = cpdn_clone_box(box, new_data=tgt_data, T_vals=vals, T_bnds=bnds, 
+				   method_string=method_str, history_string=history_str)
+	return tgt_box
+	
 ###############################################################################
 
 def cpdn_climatological_month_mean(box):

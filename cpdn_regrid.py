@@ -327,8 +327,8 @@ def cpdn_regrid_upscale(src_box, tgt_X, tgt_Y, interp_method="nearest"):
 	ratio_X = float(len(src_X)) / len(tgt_X)		# calculate ratio
 	ratio_Y = float(len(src_Y)) / len(tgt_Y)
 	# construct fractional coordinates
-	fractional_tgt_X = [x * ratio_X for x in range(0, len(tgt_X))]
-	fractional_tgt_Y = [y * ratio_Y for y in range(0, len(tgt_Y))]
+	fractional_tgt_X = [x * ratio_X + 0.5*ratio_X for x in range(0, len(tgt_X))]
+	fractional_tgt_Y = [y * ratio_Y + 0.5*ratio_Y for y in range(0, len(tgt_Y))]
 	# construct the meshgrid - determine order
 	if src_X_axis < src_Y_axis:
 		out_grid = numpy.meshgrid(fractional_tgt_Y, fractional_tgt_X)

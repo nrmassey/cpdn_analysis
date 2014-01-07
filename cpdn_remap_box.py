@@ -89,7 +89,7 @@ def cpdn_remap_longitude(box):
 	# return a box
 	out_box = cpdn_box(name=box.get_name(), dims=out_dims, var_attrs=box.get_attributes(),
 					   glob_attrs = box.get_global_attributes(), off=0.0, sf=1.0,
-					   data=tgt_data)
+					   data=tgt_data, rotated_grid=box.get_rotated_grid())
 	return out_box
 
 ###############################################################################
@@ -134,7 +134,7 @@ def cpdn_remap_latitude(box):
 	# return a box
 	out_box = cpdn_box(name=box.get_name(), dims=out_dims, var_attrs=box.get_attributes(),
 					   glob_attrs = box.get_global_attributes(), off=0.0, sf=1.0,
-					   data=tgt_data)
+					   data=tgt_data, rotated_grid=box.get_rotated_grid())
 	return out_box
 
 ###############################################################################
@@ -159,8 +159,8 @@ def cpdn_replace_mv(box, new_mv):
 			var_attrs["_FillValue"] = new_mv
 	
 	out_box = cpdn_box(name=box.get_name(), dims=box.get_dimensions(), 
-					   var_attrs=var_attrs, glob_attrs = box.get_global_attributes(), 
-					   off=0.0, sf=1.0, data=src_data)
+					   var_attrs=var_attrs, glob_attrs=box.get_global_attributes(), 
+					   off=0.0, sf=1.0, data=src_data, rotated_grid=box.get_rotated_grid())
 	return out_box
 
 ###############################################################################
@@ -212,8 +212,8 @@ def cpdn_reshape(box, new_shape, new_dim_names=[], new_dim_axes=[]):
 	tgt_data = numpy.reshape(src_data, new_shape)
 
 	# create the box
-	tgt_box = cpdn_box(name = box.get_name(), dims = new_dimensions,
-					   var_attrs = box.get_attributes(), 
-					   glob_attrs = box.get_global_attributes(),
-					   off = box.get_off(), sf = box.get_sf(), data = tgt_data)
+	tgt_box = cpdn_box(name=box.get_name(), dims=new_dimensions, 
+					   var_attrs=box.get_attributes(), glob_attrs=box.get_global_attributes(), 
+					   off=box.get_off(), sf=box.get_sf(), 
+					   data=tgt_data, rotated_grid=box.get_rotated_grid())
 	return tgt_box

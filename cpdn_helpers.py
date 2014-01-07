@@ -58,8 +58,14 @@ def cpdn_clone_box(o_box, new_data=None, T_vals=None, T_bnds=None,
 		oname = o_box.get_name()
 	if new_data == None:
 		new_data = o_box.get_values()
+	# copy rotated grid if exists
+	if o_box.has_rotated_grid():
+		rot_grid = o_box.get_rotated_grid()
+	else:
+		rot_grid = None
+		
 	clone_box = cpdn_box(dims=tgt_dims, var_attrs=tgt_attrs, glob_attrs=tgt_glob_attrs,
-         	             name=oname, off=tgt_off, sf=tgt_sf,
-            	         data=new_data)
+         	             name=oname, off=tgt_off, sf=tgt_sf, data=new_data,
+         	             rotated_grid=rot_grid)
 	return clone_box
 

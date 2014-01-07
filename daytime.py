@@ -78,9 +78,19 @@ def daytime_to_float(dt, n_days_per_year=365.25):
 	"""Convert a daytime to the number of days since 0, given an arbitrary 
 	   number of days in a year"""
 
-	c_time = float(int((dt.year-1) * n_days_per_year))
+	c_time = float(dt.year-1) * int(n_days_per_year)
 	if n_days_per_year == 365.25:
-		c_time += days_elapsed[dt.month-1]
+		# calculate number of leap years
+		n_leaps = 0
+		for y in range(0, dt.year):
+			if y % 400 == 0:
+				n_leaps += 1
+			elif y % 100 == 0:
+				n_leaps += 0
+			elif y % 4 == 0:
+				n_leaps += 1
+		c_time += n_leaps
+		c_time += days_elapsed[dt.month-1] + 1
 		# check for leap year
 		if dt.year % 4 == 0 and dt.month == 2:
 			c_time += 1.0
@@ -90,7 +100,6 @@ def daytime_to_float(dt, n_days_per_year=365.25):
 	c_time += float(dt.hour) / 24
 	c_time += float(dt.minute) / n_minutes_per_day
 	c_time += float(dt.second) / n_secs_per_day
-
 	return c_time
 
 ###############################################################################

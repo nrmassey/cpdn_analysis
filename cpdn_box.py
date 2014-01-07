@@ -353,13 +353,17 @@ class cpdn_boxdim:
 		#
 		# set the name
 		self.__dim_name = ncdim
-		# set the dimension values
-		dim_var = ncfile.variables[ncdim]
-		vals = dim_var[:]
-		self.__dim_vals = numpy.array(vals) # use numpy.array to copy values so as
-											# to free up the reference to the ncfile
-		# set the dimension attributes
-		self.__dim_attrs = get_attributes(dim_var)
+		# set the dimension values - if they are in the file, otherwise set to 0..n range
+		if ncdim in ncfile.variables.keys():
+			dim_var = ncfile.variables[ncdim]
+			vals = dim_var[:]
+			self.__dim_vals = numpy.array(vals) # use numpy.array to copy values so as
+												# to free up the reference to the ncfile
+			# set the dimension attributes
+			self.__dim_attrs = get_attributes(dim_var)
+		else:
+			self.__dim_vals = numpy.arange(0, ncfile.dimensions[ncdim])
+			
 		# load the dimension attribute
 		self.__load_dimension_axis()
 
@@ -921,7 +925,8 @@ class cpdn_box:
 							   var_attrs=self.get_attributes(),
 							   name=self.get_name(),
 							   glob_attrs=self.get_global_attributes(),
-							   off=0.0, sf=1.0, data=new_box_data)
+							   off=0.0, sf=1.0, data=new_box_data,
+							   rotated_grid=self.get_rotated_grid())
 		# add two boxes together
 		elif isinstance(other, cpdn_box):
 			# first check that the data is compatible
@@ -950,7 +955,8 @@ class cpdn_box:
 			# create a new box with the new data, name and metadata
 			new_box = cpdn_box(dims=self.get_dimensions(), var_attrs=new_box_attrs,
 							   name=new_box_name, glob_attrs=new_glob_attrs,
-							   off=0.0, sf=1.0, data=new_box_data)
+							   off=0.0, sf=1.0, data=new_box_data, 
+							   rotated_grid=self.get_rotated_grid())
 		else:
 			raise Exception("Cannot add boxes : type error for right hand side")
 		return new_box
@@ -977,12 +983,13 @@ class cpdn_box:
 							   var_attrs=self.get_attributes(),
 							   name=self.get_name(),
 							   glob_attrs=self.get_global_attributes(),
-							   off=0.0, sf=1.0, data=new_box_data)
+							   off=0.0, sf=1.0, data=new_box_data,
+							   rotated_grid=self.get_rotated_grid())
 		# sub two boxes together
 		elif isinstance(other, cpdn_box):
 			# first check that the data is compatible
 			if self.get_dimension_lengths() != other.get_dimension_lengths():
-				raise Exception("Cannot add boxes : dimension lengths differ")
+				raise Exception("Cannot subtract boxes : dimension lengths differ")
 
 			# get the other box data and missing value indices
 			other_data = other.get_values()
@@ -1007,7 +1014,8 @@ class cpdn_box:
 			# create a new box with the new data, name and metadata
 			new_box = cpdn_box(dims=self.get_dimensions(), var_attrs=new_box_attrs,
 							   name=new_box_name, glob_attrs=new_glob_attrs,
-							   off=0.0, sf=1.0, data=new_box_data)
+							   off=0.0, sf=1.0, data=new_box_data,
+							   rotated_grid=self.get_rotated_grid())
 		else:
 			raise Exception("Cannot subtract boxes : type error for right hand side")
 		return new_box
@@ -1036,7 +1044,8 @@ class cpdn_box:
 							   var_attrs=self.get_attributes(),
 							   name=self.get_name(),
 							   glob_attrs=self.get_global_attributes(),
-							   off=0.0, sf=1.0, data=new_box_data)
+							   off=0.0, sf=1.0, data=new_box_data,
+							   rotated_grid=self.get_rotated_grid())
 		# multply two boxes together
 		elif isinstance(other, cpdn_box):
 			# first check that the data is compatible
@@ -1064,7 +1073,8 @@ class cpdn_box:
 			# create a new box with the new data, name and metadata
 			new_box = cpdn_box(dims=self.get_dimensions(), var_attrs=new_box_attrs,
 							   name=new_box_name, glob_attrs=new_glob_attrs,
-							   off=0.0, sf=1.0, data=new_box_data)
+							   off=0.0, sf=1.0, data=new_box_data,
+							   rotated_grid=self.get_rotated_grid())
 		else:
 			raise Exception("Cannot multiply boxes : type error for right hand side")
 
@@ -1092,7 +1102,8 @@ class cpdn_box:
 							   var_attrs=self.get_attributes(),
 							   name=self.get_name(),
 							   glob_attrs=self.get_global_attributes(),
-							   off=0.0, sf=1.0, data=new_box_data)
+							   off=0.0, sf=1.0, data=new_box_data,
+							   rotated_grid=self.get_rotated_grid())
 		# multply two boxes together
 		elif isinstance(other, cpdn_box):
 			# first check that the data is compatible
@@ -1121,7 +1132,8 @@ class cpdn_box:
 			# create a new box with the new data, name and metadata
 			new_box = cpdn_box(dims=self.get_dimensions(), var_attrs=new_box_attrs,
 							   name=new_box_name, glob_attrs=new_glob_attrs,
-							   off=0.0, sf=1.0, data=new_box_data)
+							   off=0.0, sf=1.0, data=new_box_data,
+							   rotated_grid=self.get_rotated_grid())
 		else:
 			raise Exception("Cannot multiply boxes : type error for right hand side")
 
@@ -1133,24 +1145,26 @@ class cpdn_box:
 		# get the dimensions details - bounds etc.
 		self.__dims = []
 		for dim in self.__ncvar.dimensions:
-			cpdn_dim = cpdn_boxdim()
+			cpdn_dim = cpdn_boxdim(name=dim)
 			cpdn_dim.load_name_axis_attributes(self.__ncfile, self.__ncvar, dim)
 			self.__dims.append(cpdn_dim)
 			
 		# rotated grid - does this variable have a rotated grip mapping
-		if "grid_mapping" in self.__var_attrs.keys():
+		if "grid_mapping" in self.__var_attrs.keys():			
 			grid_map_name = self.__var_attrs["grid_mapping"]
-			# get the variable containing the grid mapping detail
+			# get the variable containing the grid mapping detail - if it exists
+			if not grid_map_name in self.__ncfile.variables.keys():
+				return
 			grid_map_var = self.__ncfile.variables[grid_map_name]
 			# get the type of grid mapping - this could be extended to other grid mappings
-			grid_map_type = grid_map_var._attributes["grid_mapping_name"]
-			if "rotated_latitude_longitude" in grid_map_type:
-				# now get the location of the rotated pole
-				rotated_pole_lon = grid_map_var._attributes["grid_north_pole_longitude"]
-				rotated_pole_lat = grid_map_var._attributes["grid_north_pole_latitude"]
-				self.__rotated_grid = cpdn_rotated_grid(rotated_pole_lat, rotated_pole_lon,
-														self.get_dimension("Y").get_values(),
-														self.get_dimension("X").get_values())
+			if "grid_mapping_name" in grid_map_var._attributes:
+				grid_map_type = grid_map_var._attributes["grid_mapping_name"]
+			# now get the location of the rotated pole
+			rotated_pole_lon = grid_map_var._attributes["grid_north_pole_longitude"]
+			rotated_pole_lat = grid_map_var._attributes["grid_north_pole_latitude"]
+			self.__rotated_grid = cpdn_rotated_grid(rotated_pole_lat, rotated_pole_lon,
+													self.get_dimension("Y").get_values(),
+													self.get_dimension("X").get_values())
 			
 	###########################################################################
 
@@ -1241,7 +1255,7 @@ class cpdn_box:
 	
 	def get_rotated_grid(self):
 		if not self.has_rotated_grid():
-			raise Exception("get_rotated_grid called on a box without a rotated grid")
+			return None
 		return self.__rotated_grid
 	
 	###########################################################################
