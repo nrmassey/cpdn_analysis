@@ -240,7 +240,7 @@ def cpdn_temporal_mean(box):
 	"""Create a temporal mean from a cpdn_box."""
 	# get the axis number used for the "T" dimension
 	T_axis = box.get_dimension_axes().index("T")
-	src_data = box.__getitem__().get_values().squeeze()
+	src_data = box.get_values().squeeze()
 	tgt_data = numpy.average(src_data, axis=T_axis)
 
 	# create target dimensions
