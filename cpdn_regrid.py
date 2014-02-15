@@ -164,7 +164,6 @@ def calculate_regrid_mapping_and_weights(src_X, src_Y, tgt_X, tgt_Y):
 			# get the indices of the current latitude and longitude in the tgt grid
 			idx_d = get_index_in_grid(tgt_lon, tgt_lat, tgt_X, tgt_Y)
 			idx_w = 1	# position in weight array
-
 			# calculate the source grid extents
 			idx_e = get_index_in_grid(tgt_lon, tgt_lat, src_X, src_Y)
 			# convert this back to the source grid latitude
@@ -218,7 +217,7 @@ def get_grid_mapping(idx_lon, idx_lat, grid_map):
 
 ###############################################################################
 
-def cpdn_regrid_field(src_data, tgt_data, grid_map, mv=numpy.inf):
+def cpdn_regrid_field(src_data, tgt_data, grid_map, mv=numpy.inf, accumulation="mean"):
 	# regrid a field (X by Y) of data using the computed weights
 	for x in range(0, tgt_data.shape[1]):
 		for y in range(0, tgt_data.shape[0]):
@@ -234,16 +233,21 @@ def cpdn_regrid_field(src_data, tgt_data, grid_map, mv=numpy.inf):
 				if abs(data_d) < abs(mv*0.9):		# inaccurate fp representation!
 					sum_d += data_d * w[k,2]		# sum the value
 					sum_w += w[k,2]					# sum the weight
+			if sum_w > 1.0:
+				print sum_w
 			if sum_w != 0.0:
-				tgt_data[y,x] = sum_d / sum_w		# do the average
+				# if the accumulation is a mean then divide through by the sum of the weights
+				if accumulation == "mean":
+					tgt_data[y,x] = sum_d / sum_w		# do the average
+				elif accumulation == "sum":		# if accumulation == sum
+					tgt_data[y,x] = sum_d
 			else:
 				tgt_data[y,x] = mv					# missing value
-
 	return tgt_data
 
 ###############################################################################
 
-def cpdn_regrid_downscale(src_box, tgt_X, tgt_Y):
+def cpdn_regrid_downscale(src_box, tgt_X, tgt_Y, accumulation="mean"):
 	# get the values of the src_box X and Y
 	src_X = src_box.get_dimension("X").get_values()
 	src_Y = src_box.get_dimension("Y").get_values()
@@ -281,7 +285,7 @@ def cpdn_regrid_downscale(src_box, tgt_X, tgt_Y):
 	# iterate over the box dimensions that are not X and Y
 	while not box_it.end():
 		src_data = src_box[src_idx].get_values().squeeze()
-		cpdn_regrid_field(src_data, tgt_data[tgt_idx], grid_map, mv)
+		cpdn_regrid_field(src_data, tgt_data[tgt_idx], grid_map, mv, accumulation)
 		src_idx, tgt_idx = box_it.next(True)
 
 	# create the box
@@ -385,11 +389,13 @@ def cpdn_regrid_upscale(src_box, tgt_X, tgt_Y, interp_method="nearest"):
 
 ###############################################################################
 
-def cpdn_regrid(src_box, tgt_X, tgt_Y, method="nearest"):
+def cpdn_regrid(src_box, tgt_X, tgt_Y, method="nearest", accumulation="mean"):
 	"""Regrid data from a box to the target_X and target_Y coordinate-grid.
 		Creates a new cpdn_box from the regridded data.
 		Upscaling to a higher resolution grid will interpolate with a spline.
-		Downscaling to a lower resolution grid will use area-weighted averaging"""
+		Downscaling to a lower resolution grid will use area-weighted averaging
+		method = interpolation method
+		accumulation = sum | mean"""
 
 	# first check if the source box has an X and Y axis
 	dim_axes = src_box.get_dimension_axes()
@@ -411,7 +417,7 @@ def cpdn_regrid(src_box, tgt_X, tgt_Y, method="nearest"):
 
 	# otherwise if > 0 then downscale, < 0 upscale
 	if dim_rat_X < 1.0 or dim_rat_Y < 1.0:
-		return cpdn_regrid_downscale(src_box, tgt_X, tgt_Y)
+		return cpdn_regrid_downscale(src_box, tgt_X, tgt_Y, accumulation)
 	elif dim_rat_X > 1.0 or dim_rat_Y > 1.0:
 		return cpdn_regrid_upscale(src_box, tgt_X, tgt_Y, method)
 
